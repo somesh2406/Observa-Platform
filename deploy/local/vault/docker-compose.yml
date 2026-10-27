@@ -1,0 +1,19 @@
+# LOCAL DEVELOPMENT ONLY.
+# Vault dev mode uses in-memory storage and a known root token. Never use this setup in production.
+services:
+  vault:
+    image: hashicorp/vault:2.1.2
+    container_name: observa-vault-dev
+    restart: unless-stopped
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "local-dev-only-root-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    ports:
+      - "127.0.0.1:8200:8200"
+    command: ["server", "-dev"]
+    healthcheck:
+      test: ["CMD-SHELL", "vault status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s

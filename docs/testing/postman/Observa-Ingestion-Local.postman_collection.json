@@ -1,0 +1,515 @@
+{
+  "info": {
+    "name": "Observa Ingestion - Local API Tests",
+    "description": "Local-only smoke tests for the current ingestion API. See docs/testing/postman-ingestion-test-plan.md for Kafka assertions and cases requiring infrastructure changes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "P01 - Liveness",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/health/live",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health",
+            "live"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P02 - Readiness (Kafka must be healthy)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/health/ready",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health",
+            "ready"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P03 - Valid user action",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.user_action\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.submit\",\n    \"outcome\": \"succeeded\",\n    \"context\": {\n      \"user_id\": \"usr_pseudo_8f31\",\n      \"business_application_id\": \"loanapp_opaque_2048\",\n      \"session_id\": \"sess_opaque_7721\",\n      \"request_id\": \"req_01JAZ1\",\n      \"trace_id\": \"4bf92f3577b34da6a3ce929d0e0e4736\",\n      \"span_id\": \"00f067aa0ba902b7\"\n    },\n    \"attributes\": {\n      \"channel\": \"mobile\",\n      \"screen\": \"loan_review\",\n      \"application_stage\": \"submission\"\n    },\n    \"producer_version\": \"2.3.1\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 202', function () { pm.response.to.have.status(202); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P04 - Valid business state",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.business_state\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.status_changed\",\n    \"outcome\": \"succeeded\",\n    \"context\": {\n      \"business_application_id\": \"loanapp_opaque_2048\",\n      \"session_id\": \"sess_opaque_7721\"\n    },\n    \"attributes\": {\n      \"previous_status\": \"submitted\",\n      \"current_status\": \"under_review\"\n    },\n    \"producer_version\": \"2.3.1\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 202', function () { pm.response.to.have.status(202); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P05 - Valid technical signal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.technical_signal\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"api.request_failed\",\n    \"outcome\": \"failed\",\n    \"context\": {\n      \"request_id\": \"req_01JAZ2\",\n      \"trace_id\": \"4bf92f3577b34da6a3ce929d0e0e4736\",\n      \"span_id\": \"00f067aa0ba902b7\"\n    },\n    \"attributes\": {\n      \"http_status\": 502,\n      \"dependency\": \"credit-decision\"\n    },\n    \"error\": {\n      \"code\": \"UPSTREAM_TIMEOUT\",\n      \"category\": \"dependency\",\n      \"message\": \"Upstream request timed out\"\n    },\n    \"producer_version\": \"2.3.1\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 202', function () { pm.response.to.have.status(202); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P06 - Malformed JSON",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"specversion\":",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P07 - Missing required CloudEvents field",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"missing-source\",\n  \"type\": \"com.observa.user_action\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.submit\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P08 - Unsupported event type",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.unknown\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.submit\",\n    \"outcome\": \"succeeded\",\n    \"context\": {\n      \"user_id\": \"usr_pseudo_8f31\",\n      \"business_application_id\": \"loanapp_opaque_2048\",\n      \"session_id\": \"sess_opaque_7721\",\n      \"request_id\": \"req_01JAZ1\",\n      \"trace_id\": \"4bf92f3577b34da6a3ce929d0e0e4736\",\n      \"span_id\": \"00f067aa0ba902b7\"\n    },\n    \"attributes\": {\n      \"channel\": \"mobile\",\n      \"screen\": \"loan_review\",\n      \"application_stage\": \"submission\"\n    },\n    \"producer_version\": \"2.3.1\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P09 - Unknown envelope field",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.user_action\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.submit\",\n    \"outcome\": \"succeeded\",\n    \"context\": {\n      \"user_id\": \"usr_pseudo_8f31\",\n      \"business_application_id\": \"loanapp_opaque_2048\",\n      \"session_id\": \"sess_opaque_7721\",\n      \"request_id\": \"req_01JAZ1\",\n      \"trace_id\": \"4bf92f3577b34da6a3ce929d0e0e4736\",\n      \"span_id\": \"00f067aa0ba902b7\"\n    },\n    \"attributes\": {\n      \"channel\": \"mobile\",\n      \"screen\": \"loan_review\",\n      \"application_stage\": \"submission\"\n    },\n    \"producer_version\": \"2.3.1\"\n  },\n  \"unexpected\": \"not-allowed\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P10 - Missing Content-Type",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.user_action\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.submit\",\n    \"outcome\": \"succeeded\",\n    \"context\": {\n      \"user_id\": \"usr_pseudo_8f31\",\n      \"business_application_id\": \"loanapp_opaque_2048\",\n      \"session_id\": \"sess_opaque_7721\",\n      \"request_id\": \"req_01JAZ1\",\n      \"trace_id\": \"4bf92f3577b34da6a3ce929d0e0e4736\",\n      \"span_id\": \"00f067aa0ba902b7\"\n    },\n    \"attributes\": {\n      \"channel\": \"mobile\",\n      \"screen\": \"loan_review\",\n      \"application_stage\": \"submission\"\n    },\n    \"producer_version\": \"2.3.1\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 415', function () { pm.response.to.have.status(415); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P11 - Wrong Content-Type",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specversion\": \"1.0\",\n  \"id\": \"{{$guid}}\",\n  \"source\": \"https://bank.example/apps/mobile-banking/loan-origination\",\n  \"type\": \"com.observa.user_action\",\n  \"time\": \"2026-10-26T12:00:00Z\",\n  \"datacontenttype\": \"application/json\",\n  \"dataschema\": \"https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json\",\n  \"data\": {\n    \"event_name\": \"loan.submit\",\n    \"outcome\": \"succeeded\",\n    \"context\": {\n      \"user_id\": \"usr_pseudo_8f31\",\n      \"business_application_id\": \"loanapp_opaque_2048\",\n      \"session_id\": \"sess_opaque_7721\",\n      \"request_id\": \"req_01JAZ1\",\n      \"trace_id\": \"4bf92f3577b34da6a3ce929d0e0e4736\",\n      \"span_id\": \"00f067aa0ba902b7\"\n    },\n    \"attributes\": {\n      \"channel\": \"mobile\",\n      \"screen\": \"loan_review\",\n      \"application_stage\": \"submission\"\n    },\n    \"producer_version\": \"2.3.1\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 415', function () { pm.response.to.have.status(415); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P12 - Empty body",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/cloudevents+json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/v1/events",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "v1",
+            "events"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "   ",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP status is 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('JSON error response', function () { const b = pm.response.json(); pm.expect(b).to.have.property('code'); pm.expect(b).to.have.property('message'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "service": "Observa Ingestion Service",
+  "environment": "development",
+  "http": {
+    "address": "127.0.0.1:8080",
+    "read_header_timeout": "5s",
+    "read_timeout": "15s",
+    "write_timeout": "15s",
+    "idle_timeout": "60s",
+    "shutdown_timeout": "15s",
+    "publish_timeout": "5s",
+    "max_body_bytes": 1048576
+  },
+  "logger": {
+    "level": "info",
+    "format": "json",
+    "add_source": true
+  },
+  "development": {
+    "allow_unauthenticated": true,
+    "tenant_id": "tenant-local-dev",
+    "source_id": "source-local-dev"
+  },
+  "kafka": {
+    "brokers": ["127.0.0.1:9092"],
+    "topic": "observa-events-v1",
+    "delivery_timeout": "5s",
+    "sasl_mechanism": "",
+    "username_secret_key": "kafka_username",
+    "password_secret_key": "kafka_password",
+    "tls": false
+  },
+  "vault": {
+    "enabled": false,
+    "address": "http://127.0.0.1:8200",
+    "kv_v2_path": "observa/ingestion",
+    "token_env": "VAULT_TOKEN",
+    "request_timeout": "3s",
+    "skip_tls_verify": false
+  }
+}

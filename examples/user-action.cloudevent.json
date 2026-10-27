@@ -1,0 +1,27 @@
+{
+  "specversion": "1.0",
+  "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+  "source": "https://bank.example/apps/mobile-banking/loan-origination",
+  "type": "com.observa.user_action",
+  "time": "2026-10-16T10:30:12.450Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+  "data": {
+    "event_name": "loan.submit",
+    "outcome": "succeeded",
+    "context": {
+      "user_id": "usr_pseudo_8f31",
+      "business_application_id": "loanapp_opaque_2048",
+      "session_id": "sess_opaque_7721",
+      "request_id": "req_01JAZ1",
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "span_id": "00f067aa0ba902b7"
+    },
+    "attributes": {
+      "channel": "mobile",
+      "screen": "loan_review",
+      "application_stage": "submission"
+    },
+    "producer_version": "2.3.1"
+  }
+}

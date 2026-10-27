@@ -1,0 +1,21 @@
+# Go
+/bin/
+/dist/
+coverage.out
+*.test
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.local.yaml
+*.local.yml
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Go workspace checksum file
+go.work.sum

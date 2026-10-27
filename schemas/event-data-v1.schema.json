@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+  "title": "Observa Event Data v1",
+  "description": "Observa domain payload carried in CloudEvents data. Tenant and authenticated source identity are intentionally not producer-controlled fields.",
+  "type": "object",
+  "required": [
+    "event_name"
+  ],
+  "properties": {
+    "event_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$",
+      "description": "Stable, low-cardinality event name; dynamic identifiers belong in context or attributes."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "succeeded",
+        "failed",
+        "denied",
+        "cancelled",
+        "unknown"
+      ]
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Stable tenant-scoped actor/user identifier. Prefer a pseudonymous/tokenized value if the source-system login ID is sensitive; never use credentials."
+        },
+        "business_application_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Stable tenant-scoped identifier for the business case (for example a loan application), not the source software application. Prefer tokenization when the source-system key is sensitive."
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "trace_id": {
+          "type": "string",
+          "pattern": "^(?!0{32}$)[0-9a-f]{32}$"
+        },
+        "span_id": {
+          "type": "string",
+          "pattern": "^(?!0{16}$)[0-9a-f]{16}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attributes": {
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "\\S"
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "integer",
+          "boolean",
+          "object",
+          "array",
+          "null"
+        ]
+      },
+      "description": "Event-specific structured metadata. Runtime must enforce byte/depth limits and sensitive-data policy."
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+    "producer_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,891 @@
+[
+  {
+    "name": "valid_complete_event",
+    "valid": true,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "valid_minimal_event",
+    "valid": true,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "valid_relative_source_uri_reference",
+    "valid": true,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "/apps/mobile",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "valid_unicode_event_id_at_schema_limit",
+    "valid": true,
+    "event": {
+      "specversion": "1.0",
+      "id": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "valid_nested_json_attributes",
+    "valid": true,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "nested": {
+            "list": [
+              1,
+              true,
+              null,
+              {
+                "ok": "yes"
+              }
+            ]
+          }
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "missing_id",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "unsupported_specversion",
+    "valid": false,
+    "event": {
+      "specversion": "2.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "unsupported_event_type",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.unknown",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "invalid_event_name",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "Loan Submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "invalid_timestamp",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "yesterday",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "invalid_source_uri",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bad host/",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "unexpected_envelope_field",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      },
+      "tenant_id": "tenant-1"
+    }
+  },
+  {
+    "name": "legacy_user_ref_field",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7",
+          "user_ref": "usr_token_1"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "user_name_not_allowed",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7",
+          "user_name": "Jane Doe"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "business_application_ref_legacy_field",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7",
+          "business_application_ref": "loan-1"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "applicant_name_not_allowed",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7",
+          "applicant_name": "Jane Doe"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "null_optional_outcome",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": null,
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "null_optional_context",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": null,
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "empty_error_object",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1",
+        "error": {}
+      }
+    }
+  },
+  {
+    "name": "zero_trace_id",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "00000000000000000000000000000000",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "id_exceeds_max_length",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "attribute_key_exceeds_max_length",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx": "value"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "too_many_attributes",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "key0": 0,
+          "key1": 1,
+          "key2": 2,
+          "key3": 3,
+          "key4": 4,
+          "key5": 5,
+          "key6": 6,
+          "key7": 7,
+          "key8": 8,
+          "key9": 9,
+          "key10": 10,
+          "key11": 11,
+          "key12": 12,
+          "key13": 13,
+          "key14": 14,
+          "key15": 15,
+          "key16": 16,
+          "key17": 17,
+          "key18": 18,
+          "key19": 19,
+          "key20": 20,
+          "key21": 21,
+          "key22": 22,
+          "key23": 23,
+          "key24": 24,
+          "key25": 25,
+          "key26": 26,
+          "key27": 27,
+          "key28": 28,
+          "key29": 29,
+          "key30": 30,
+          "key31": 31,
+          "key32": 32,
+          "key33": 33,
+          "key34": 34,
+          "key35": 35,
+          "key36": 36,
+          "key37": 37,
+          "key38": 38,
+          "key39": 39,
+          "key40": 40,
+          "key41": 41,
+          "key42": 42,
+          "key43": 43,
+          "key44": 44,
+          "key45": 45,
+          "key46": 46,
+          "key47": 47,
+          "key48": 48,
+          "key49": 49,
+          "key50": 50,
+          "key51": 51,
+          "key52": 52,
+          "key53": 53,
+          "key54": 54,
+          "key55": 55,
+          "key56": 56,
+          "key57": 57,
+          "key58": 58,
+          "key59": 59,
+          "key60": 60,
+          "key61": 61,
+          "key62": 62,
+          "key63": 63,
+          "key64": 64
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "whitespace_only_event_id",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "   ",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "whitespace_only_attribute_key",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "   ": "value"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "context_user_id_too_long",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1"
+      }
+    }
+  },
+  {
+    "name": "error_message_too_long",
+    "valid": false,
+    "event": {
+      "specversion": "1.0",
+      "id": "7d2c1c7e-6a72-4f08-8df6-1e2c3f9a8b10",
+      "source": "https://bank.example/apps/mobile-banking/loan-origination",
+      "type": "com.observa.user_action",
+      "time": "2026-10-16T10:30:12.450Z",
+      "datacontenttype": "application/json",
+      "dataschema": "https://somesh2406.github.io/observa-event-contracts/schemas/event-data-v1.schema.json",
+      "data": {
+        "event_name": "loan.submit",
+        "outcome": "succeeded",
+        "context": {
+          "user_id": "usr_pseudo_8f31",
+          "business_application_id": "loanapp_opaque_2048",
+          "session_id": "sess_opaque_7721",
+          "request_id": "req_01JAZ1",
+          "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+          "span_id": "00f067aa0ba902b7"
+        },
+        "attributes": {
+          "channel": "mobile",
+          "screen": "loan_review",
+          "application_stage": "submission"
+        },
+        "producer_version": "2.3.1",
+        "error": {
+          "message": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+        }
+      }
+    }
+  }
+]

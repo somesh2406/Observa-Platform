@@ -1,0 +1,2 @@
+# Used only to validate JSON Schema documents and contract examples in CI/local checks.
+jsonschema==4.26.0
