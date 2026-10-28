@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: observa-ingestion
+spec:
+  parentRefs:
+    - name: observa-edge
+  hostnames:
+    - "${OBSERVA_GATEWAY_HOST}"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /v1/events
+          method: POST
+      backendRefs:
+        - name: observa-ingestion
+          port: 8080
+      timeouts:
+        request: 15s

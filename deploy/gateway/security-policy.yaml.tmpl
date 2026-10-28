@@ -1,0 +1,22 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: observa-ingestion-jwt
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: observa-ingestion
+  jwt:
+    providers:
+      - name: observa-issuer
+        issuer: "${OBSERVA_JWT_ISSUER}"
+        audiences:
+          - "${OBSERVA_JWT_AUDIENCE}"
+        remoteJWKS:
+          uri: "${OBSERVA_JWKS_URL}"
+        claimToHeaders:
+          - claim: tenant_id
+            header: X-Observa-Tenant
+          - claim: source_id
+            header: X-Observa-Source

@@ -1,20 +1,30 @@
 # Observa Ingestion Service
 
-This independently buildable Go module accepts CloudEvents 1.0 structured JSON, validates it through the shared `libs/eventcontract` module, and returns `202 Accepted` only after Kafka confirms publication. It does not consume Kafka or write downstream storage.
+This Go service accepts one CloudEvents 1.0 structured JSON event, validates the Observa contract through `libs/eventcontract`, enforces the tenant-specific business quota, and publishes the original event bytes to Kafka. The public HTTP route is Envoy's responsibility; do not expose the ingestion listener directly to untrusted clients.
+
+## Request handling
+
+1. Require `Content-Type: application/cloudevents+json` and enforce the configured request-body limit.
+2. Parse and validate the CloudEvent. Invalid events are rejected before any tenant quota is consumed.
+3. In gateway-authenticated mode, read `X-Observa-Tenant` and `X-Observa-Source` from headers that Envoy overwrites using verified JWT claims `tenant_id` and `source_id`. Requests missing either value receive `401`. Configure network policy/firewall rules so only the gateway can reach the ingestion service; these headers are trusted metadata, not credentials.
+4. Apply the tenant-specific limiter. `memory` is process-local and intended for local development; `redis` uses an atomic Redis counter so application replicas share a fixed-window tenant quota. Limiter backend errors fail closed with `503`; exceeded quotas return `429`.
+5. Publish the unchanged event body and return `202 Accepted` only after Kafka delivery confirmation.
+
+The Kafka key is `tenantID:sourceID` when the event has no `data.context.session_id`, otherwise `tenantID:sourceID:sessionID`. `event.id` is deliberately excluded from the key so it does not split records from the same session across partitions.
+
+## Delivery semantics
+
+The ingestion boundary is **at-least-once**, not exactly-once. A timeout can leave the broker result ambiguous and retries can publish a duplicate. Any downstream consumer must deduplicate by CloudEvents `event.id`; no consumer or deduplication store is implemented in this service.
 
 ## Configuration
 
-Viper loads `configs/ingestion.local.json` (or the path supplied by `--config` / `OBSERVA_CONFIG_FILE`). Supported `OBSERVA_*` environment variables override file values and may supply keys absent from the JSON file. Non-secret settings belong in the file or deployment environment; Vault supplies Kafka SASL credentials when SASL is enabled.
+The service loads `configs/ingestion.local.json` or `--config` / `OBSERVA_CONFIG_FILE`; `OBSERVA_*` environment variables override config values.
 
-The Vault KV v2 path is relative to the `secret` mount, for example `observa/ingestion`. Do not include `secret/data/` in the configured path.
+- `environment` and `development.allow_unauthenticated`: unauthenticated mode is accepted only with `environment=development`, a fixed tenant/source, and a literal loopback bind of `127.0.0.1` or `::1`.
+- `tenant_rate_limit.backend`: `memory` or `redis`; set `tenant_rate_limit.requests` and `tenant_rate_limit.window`. Redis mode also uses `redis_address`, `redis_password_env`, `redis_db`, `redis_tls`, and `dial_timeout`.
+- `kafka.sasl_mechanism`: `PLAIN`, `SCRAM-SHA-256`, or `SCRAM-SHA-512`; `PLAIN` requires `kafka.tls=true`.
+- `vault`: optional KV v2 secret lookup for Kafka SASL credentials. The path is relative to the KV mount.
 
-## Local run
+## Run locally
 
-From the repository root, with the required Go toolchain and a running local Kafka broker/topic:
-
-```powershell
-$env:OBSERVA_CONFIG_FILE = "configs/ingestion.local.json"
-go run ./services/ingestion/cmd/ingestion
-```
-
-See [`docs/runbooks/ingestion-local-development.md`](../../docs/runbooks/ingestion-local-development.md). Unauthenticated mode is permitted only for loopback-bound local development. All non-development startup is blocked until producer authentication and trusted tenant/source resolution are implemented.
+The full local stack, including the edge gateway, is started with `make local-up` and stopped with `make local-down`. See [`deploy/local/README.md`](../../deploy/local/README.md). For direct host-only development, `make run-ingestion` reads the loopback-only local config and requires Kafka to be available at the configured address.

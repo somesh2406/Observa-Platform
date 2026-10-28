@@ -1,158 +1,87 @@
-# Ingestion Service — Local Development Runbook
+# Ingestion local-development runbook
 
-## Scope and warning
+This runbook describes the current Envoy-fronted local stack and the separate direct-host development mode. Local development uses a loopback-only unauthenticated configuration; the Compose ingestion container disables that mode and accepts identity only from Envoy-forwarded JWT claim headers.
 
-This runbook is for an isolated developer machine. The sample configuration enables unauthenticated ingestion using a fixed development tenant/source and binds HTTP to `127.0.0.1`. Do not expose this mode to a LAN, shared environment, or production. Production startup intentionally fails until a producer authentication/identity adapter is implemented.
+## 1. Prerequisites and stack start
 
-The local Vault Compose file uses Vault development mode, an in-memory store, and a known root token. It is not a production deployment.
-
-## Prerequisites
-
-- Go 1.27.3 (or a newer supported patch release), matching the repository `go.mod` toolchain directive.
-- A running local Kafka broker reachable at `127.0.0.1:9092`.
-- A Kafka topic named `observa.events.v1`.
-- Docker Compose only if using the optional local Vault setup.
-
-Run the Go checks on a machine with the required toolchain and dependency access. Unit tests do not require Kafka; the integration test and live API checks below do.
-
-## 1. Verify the toolchain and modules
-
-```powershell
-go version
-# Expected: go1.27.3 or a newer supported patch release
-
-Push-Location libs/eventcontract
-go mod tidy
-Pop-Location
-
-Push-Location services/ingestion
-go mod tidy
-Pop-Location
-
-go test ./libs/eventcontract/... ./services/ingestion/...
-go test -race ./libs/eventcontract/... ./services/ingestion/...
-go vet ./libs/eventcontract/... ./services/ingestion/...
-make check
-```
-
-Review dependency/license/vulnerability posture for `github.com/twmb/franz-go` before production release. Do not bypass a failed dependency download or test by treating it as a pass.
-
-## 2. Prepare Kafka
-
-Create the topic using the topic-management utility provided by your local Kafka distribution. Example for a Kafka installation that exposes `kafka-topics.sh`:
-
-```powershell
-docker exec observa-kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic observa.events.v1 --partitions 1 --replication-factor 1
-```
-
-The single-broker replication factor is for local development only. It does not meet the production durability target in ADR-002. If the topic already exists, inspect its configuration instead of recreating it.
-
-## 3. Start the service without Vault (plaintext local Kafka)
-
-Review `configs/ingestion.local.json`. It intentionally uses loopback HTTP and explicit development tenant/source values. Keep `vault.enabled` false when the local broker does not use SASL credentials.
-
-```powershell
-$env:OBSERVA_CONFIG_FILE = "configs/ingestion.local.json"
-go run ./services/ingestion/cmd/ingestion
-```
-
-The process fails startup if the local-development identity mode is not explicitly enabled or the required Kafka configuration is invalid.
-
-## 4. Configuration and environment overrides
-
-Viper reads the JSON file, registers the supported configuration keys for environment lookup, and applies `OBSERVA_*` overrides. This explicit binding also permits an environment variable to supply a value when that key is absent from the JSON file. Environment values override file values. For list settings such as Kafka brokers, use a comma-separated value. Examples in PowerShell:
-
-```powershell
-$env:OBSERVA_HTTP_ADDRESS = "127.0.0.1:8080"
-$env:OBSERVA_KAFKA_BROKERS = "127.0.0.1:9092"
-$env:OBSERVA_KAFKA_TOPIC = "observa.events.v1"
-```
-
-Unset an override with `Remove-Item Env:OBSERVA_HTTP_ADDRESS` (or the relevant variable). Do not put secrets into the JSON file or commit local secret files. Vault is for Kafka credentials when SASL is actually enabled, not for ordinary listener/topic/timeouts.
-
-## 5. Optional: run local Vault
-
-In another terminal:
+Install Go 1.27.3, Docker Compose v2, GNU Make, and `curl`. From the repository root:
 
 ```sh
-docker compose -f deploy/local/vault/docker-compose.yml up -d
-./scripts/vault-local-setup.sh
+cp .env.example .env
+# Set OBSERVA_JWT_ISSUER, OBSERVA_JWT_AUDIENCE, OBSERVA_JWKS_URL,
+# OBSERVA_JWKS_HOST and OBSERVA_JWKS_PORT to your IdP's actual values.
+make local-up
+make local-logs
 ```
 
-The script writes placeholder credentials to KV v2 at `secret/observa/ingestion`. Those values do not authenticate to a Kafka broker unless you deliberately configure matching local broker credentials. Do not enable SASL with placeholders and expect a successful connection.
+The local HTTPS entry point is `https://127.0.0.1:8443`. The self-signed certificate is for local development and is not trusted by default. The local stack also starts a single-node KRaft Kafka broker, the existing-style dev Vault, Redis, and the Envoy external rate-limit service. Ingestion has no host-published port.
 
-To use Vault-backed Kafka credentials, configure the local Kafka broker for a supported SASL mechanism, then edit `configs/ingestion.local.json`:
+The `.env.example` JWT values are examples only. They allow the edge process to start, but event publishing requires a JWT signed by the configured issuer with the configured audience and string `tenant_id` and `source_id` claims.
 
-- Set `kafka.sasl_mechanism` to `PLAIN`, `SCRAM-SHA-256`, or `SCRAM-SHA-512` to match the broker.
-- Set `vault.enabled` to `true`.
-- Keep `vault.kv_v2_path` as `observa/ingestion`. This path is relative to the `secret` KV v2 mount; the Vault API client constructs `/v1/secret/data/observa/ingestion`.
-- Keep the credential keys as `kafka_username` and `kafka_password` or update them to match the secret.
-- Set `kafka.tls` according to the broker configuration.
-
-Then run in PowerShell (only after Kafka has been configured for matching SASL credentials):
-
-```powershell
-$env:VAULT_TOKEN = "local-dev-only-root-token"
-$env:OBSERVA_VAULT_ENABLED = "true"
-$env:OBSERVA_KAFKA_SASL_MECHANISM = "PLAIN"
-$env:OBSERVA_CONFIG_FILE = "configs/ingestion.local.json"
-go run ./services/ingestion/cmd/ingestion
-```
-
-These overrides will not work against the current plaintext Kafka container: it has no SASL listener or matching broker credentials. For the current end-to-end smoke test, keep `vault.enabled=false` and `kafka.sasl_mechanism=""`. Use `vault kv get` to verify the secret exists, and test the Go Vault adapter with its automated HTTP test. Do not enable SASL with placeholder credentials.
-
-Vault is read at startup. Missing secrets or a Vault outage cause startup failure. Credential refresh without restart is not implemented. The root token and dev-mode server must never be used outside local development.
-
-## 6. Submit an event
-
-From the repository root:
-
-```powershell
-curl.exe --fail-with-body -i -H "Content-Type: application/cloudevents+json" --data-binary "@examples/user-action.cloudevent.json" http://127.0.0.1:8080/v1/events
-```
-
-Expected result: `202 Accepted` only after Kafka confirms delivery. The response includes the event ID, an ingestion ID, and server receive time. It does not assert that downstream processing or storage has completed.
-
-## 7. Verify health endpoints
+## 2. Verify service readiness
 
 ```sh
-curl -i http://127.0.0.1:8080/health/live
-curl -i http://127.0.0.1:8080/health/ready
+curl -k -i https://127.0.0.1:8443/health/live
+curl -k -i https://127.0.0.1:8443/health/ready
+./scripts/test-integration.sh
 ```
 
-Liveness is independent of Kafka availability. Readiness pings Kafka and returns `503` when Kafka is unreachable.
+`/health/live` should return `200`. `/health/ready` should return `200` only when Kafka is reachable. The integration smoke test also verifies that an event request without a JWT is rejected with `401`.
 
-## 8. Verify the Kafka record
+To check individual infrastructure services:
 
-Consume from `observa.events.v1` using the consumer utility supplied by your Kafka distribution. Verify:
-
-- The record value is the original CloudEvents JSON, unchanged.
-- The record key is a JSON tuple `[tenant_id, source_id, event_id]`.
-- Headers include `observa_tenant_id`, `observa_source_id`, `observa_ingestion_id`, `observa_received_at`, and `observa_contract_version`.
-
-## 9. Automated Kafka integration test
-
-The publisher integration test is opt-in so normal unit tests do not require a broker. The dedicated `make test-kafka-integration` target fails immediately if either required environment variable is missing. Ensure the topic exists, then run from the repository root in PowerShell:
-
-```powershell
-$env:OBSERVA_KAFKA_INTEGRATION_BROKERS = "127.0.0.1:9092"
-$env:OBSERVA_KAFKA_INTEGRATION_TOPIC = "observa.events.v1"
-make test-kafka-integration
+```sh
+docker compose -f deploy/local/docker-compose.yml ps
+docker compose -f deploy/local/docker-compose.yml exec kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+docker compose -f deploy/local/docker-compose.yml exec redis redis-cli ping
+curl -sS http://127.0.0.1:8200/v1/sys/health
 ```
 
-The test verifies broker readiness and confirmed publication. It does not validate the event contract or exercise the HTTP endpoint; those are covered by handler/contract tests and the manual Postman/Kafka UI smoke test below.
+## 3. Ingest a contract-valid event
 
-## 10. Negative-path checks
+Set a JWT in your shell (minted by the configured IdP for the configured audience), then submit the contract example:
 
-- Submit malformed JSON or a schema-invalid event: expect `400` and no Kafka publication.
-- Omit or change the content type: expect `415`.
-- Exceed the configured body size: expect `413`.
-- Stop Kafka, then submit a valid event: expect a non-`202` response (`503`); the outcome may be ambiguous if the broker accepted the record but confirmation was lost.
-- Stop Vault while `vault.enabled=true`: service startup must fail.
+```sh
+curl -k --fail-with-body -i \
+  -H "Authorization: Bearer $OBSERVA_TEST_JWT" \
+  -H 'Content-Type: application/cloudevents+json' \
+  --data-binary @examples/user-action.cloudevent.json \
+  https://127.0.0.1:8443/v1/events
+```
 
-## Known limitations before production
+A `202 Accepted` means Kafka confirmed publication, not that any downstream system has processed the event. The ingestion service validates the event before applying the tenant-specific business quota. The edge's shared coarse global rate limit and ingestion's tenant quota serve different purposes.
 
-- Authentication and authorization are not implemented. The local identity is fixed configuration, not producer identity.
-- No rate limiter or metrics exporter is included in this initial increment.
-- Run the Go test, race, vet, and live integration checks on the target machine before treating this increment as verified. Vault/Kafka authentication testing requires a broker configured with matching SASL credentials.
-- `202` confirms Kafka publication only, not raw evidence archival, ClickHouse insertion, Iceberg commit, or query visibility.
+## 4. Verify the Kafka record
+
+The local Compose Kafka broker can be accessed from the host at `127.0.0.1:19092`; container clients use `kafka:29092`. Inspect the topic with a Kafka UI/client or run the CLI consumer:
+
+```sh
+docker compose -f deploy/local/docker-compose.yml exec kafka \
+  /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 --topic observa-events-v1 --from-beginning
+```
+
+The record value is the original CloudEvents JSON. The Kafka key is `tenantID:sourceID` or `tenantID:sourceID:sessionID` when `data.context.session_id` is present. The event ID is intentionally not included in the key. The publisher uses confirmed delivery and a retry can still produce a duplicate if the broker accepted a record but the client did not observe confirmation; future consumers must deduplicate by CloudEvents `event.id`.
+
+## 5. Direct host development mode
+
+For handler/debug work that does not need the gateway, stop or leave the Compose stack as appropriate, then ensure Kafka is available at `127.0.0.1:19092` or adjust the local config. `configs/ingestion.local.json` defaults to `127.0.0.1:8080`, fixed local tenant/source values, and `development.allow_unauthenticated=true`.
+
+```sh
+make run-ingestion
+```
+
+Configuration validation permits unauthenticated mode only when `environment=development`, tenant/source values are set, and the bind address is literally `127.0.0.1` or `::1`. `localhost`, wildcard addresses, and non-loopback addresses are rejected. Never expose this mode to a LAN or production.
+
+## 6. Delivery semantics and troubleshooting
+
+- `400`: invalid CloudEvent or body; no publication.
+- `401`: gateway rejected the request or ingestion did not receive trusted tenant/source headers.
+- `413`: request body exceeded the configured limit.
+- `415`: request content type is not `application/cloudevents+json`.
+- `429`: edge-wide or tenant-specific rate limit was exceeded.
+- `503`: Kafka publication was not confirmed or the tenant limiter could not make a reliable decision.
+
+The ingestion boundary is at-least-once. A timeout may leave an ambiguous Kafka outcome, so retries may duplicate an event. Consumers must deduplicate by `event.id`; consumer-side deduplication is not part of this service.
+
+Stop the local stack with `make local-down`. The command preserves named volumes; remove them only when intentionally deleting local Kafka records.

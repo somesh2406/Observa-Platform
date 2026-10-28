@@ -38,3 +38,17 @@ func TestNewKafkaRejectsUnknownSASLMechanism(t *testing.T) {
 		t.Fatal("expected unsupported SASL mechanism to fail")
 	}
 }
+
+func TestKafkaRecordKeyUsesTenantAndSourceWithoutSession(t *testing.T) {
+	got := string(kafkaRecordKey("tenant-a", "source-b", ""))
+	if got != "tenant-a:source-b" {
+		t.Fatalf("key=%q, want tenant-a:source-b", got)
+	}
+}
+
+func TestKafkaRecordKeyIncludesSessionAndExcludesEventID(t *testing.T) {
+	got := string(kafkaRecordKey("tenant-a", "source-b", "session-c"))
+	if got != "tenant-a:source-b:session-c" {
+		t.Fatalf("key=%q, want tenant-a:source-b:session-c", got)
+	}
+}

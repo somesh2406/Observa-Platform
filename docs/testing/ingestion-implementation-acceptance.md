@@ -1,31 +1,31 @@
 # Ingestion Service — Implementation Acceptance Record
 
-**Status:** Implementation and tests updated; target-toolchain build and real Kafka/Vault verification remain pending.
+**Status:** Source changes are present; automated runtime verification depends on the target Go toolchain and Docker environment.
 
-## Automated tests included
+## Automated test coverage in the source tree
 
 - Contract validator tests and the shared JSON Schema acceptance corpus.
 - HTTP handler tests for confirmed publication (`202`), invalid event rejection, publication failure (`503`), oversized body (`413`), missing content type (`415`), empty body rejection, readiness failure, and liveness independent of Kafka.
-- Configuration tests for explicit loopback development mode, blocking non-development startup until authentication exists, loopback-only unauthenticated binding, unknown configuration fields, environment overrides, invalid Vault paths, and SASL/Vault consistency.
-- Vault adapter tests using an HTTP test server for KV v2 path, token forwarding, successful credential retrieval, invalid mount-prefixed paths, missing credentials, and required client settings.
-- Kafka publisher constructor tests for missing broker/topic, partial SASL credentials, and unsupported SASL mechanisms.
-- Application lifecycle tests for cleanup after listener startup failure and idempotent cleanup.
-- Opt-in Kafka integration test (`TestKafkaPublishIntegration`) that verifies readiness and confirmed publication when explicit test environment variables are provided.
+- Authenticated-mode handler tests for missing trusted identity, gateway-forwarded tenant/source claims, session ID propagation, and tenant-limit enforcement after event validation.
+- Configuration tests for explicit loopback-only unauthenticated mode, gateway-authenticated production config, strict configuration decoding, environment overrides, invalid Vault paths, SASL/Vault consistency, explicit rejection of SASL `PLAIN` without TLS, and tenant limiter selection.
+- Memory limiter tests for per-tenant isolation, fixed-window reset, and blank tenant rejection.
+- Vault adapter tests using an HTTP test server.
+- Kafka publisher constructor tests and an opt-in Kafka integration test (`TestKafkaPublishIntegration`).
+- Compose smoke test checks liveness/readiness through Envoy and verifies JWT rejection when an event request has no token.
 
-## Verification completed for this revision
+## Commands to run on a configured development machine
 
-- Go files formatted with `gofmt`.
-- JSON Schema validator passed all 27 shared contract cases across 3 schemas.
-- The shared `libs/eventcontract` unit tests passed under Go 1.23.2 in a compatibility copy; the delivered workspace still retains the agreed Go 1.27.3 directive.
-- ZIP integrity and preservation manifests are checked when the final archive is assembled.
+```sh
+go test ./...
+go vet ./...
+python scripts/validate_event_schemas.py
+make local-up
+make test-integration
+make local-down
+```
 
-## Not verified in this environment
+Use Go 1.27.3 as declared by `go.work` and the ingestion module. Configure a real test JWT issuer/JWKS pair before testing successful event publishing. The integration smoke test does not claim to validate a valid JWT unless a separate authenticated request is made with a token minted by that issuer.
 
-- Full compile/test of the ingestion module against the real Chi, Viper, Vault API and franz-go dependencies. External Go module downloads are blocked here.
-- `go mod tidy` and generation/verification of missing checksums for the newly direct dependencies.
-- `go test -race`, `go vet`, and all package tests under the required Go 1.27.3 toolchain.
-- End-to-end HTTP -> Kafka publication against the user's running broker.
-- Kafka SASL/TLS, which is not configured on the current local broker.
-- The Go Vault adapter against the user's live Vault instance. Its automated test uses a local HTTP test server; live secret retrieval can be checked with the runbook's Vault CLI commands.
+## Verification limitations for this archive build
 
-Follow `docs/runbooks/ingestion-local-development.md` on the developer machine. Do not interpret formatting, schema tests, or archive creation as proof that the real Kafka/Vault integration has passed.
+The current execution environment cannot download the required Go 1.27.3 toolchain from `proxy.golang.org`, and Docker is not available. Therefore, a full Go build/test, Docker image build, Compose health test, or real Kafka/JWT end-to-end test cannot be reported as passing from this environment. Formatting, static file/config checks, schema validation, manifest hashing, and ZIP preservation checks are reported separately in the final revision output.

@@ -1,0 +1,8 @@
+# Shared coarse edge limit. Tenant-specific business quotas live inside ingestion.
+domain: observa-ingestion
+descriptors:
+  - key: generic_key
+    value: ingestion
+    rate_limit:
+      unit: ${OBSERVA_EDGE_RATE_LIMIT_UNIT_LOWER}
+      requests_per_unit: ${OBSERVA_EDGE_RATE_LIMIT_REQUESTS}

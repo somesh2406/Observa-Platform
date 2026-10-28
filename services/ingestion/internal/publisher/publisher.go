@@ -3,7 +3,6 @@ package publisher
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -43,9 +42,9 @@ func NewKafka(o Options) (*Kafka, error) {
 		kgo.RequiredAcks(kgo.AllISRAcks()),
 		kgo.RecordRetries(10),
 		kgo.RecordDeliveryTimeout(o.DeliveryTimeout),
-		// The HTTP deadline must be enforceable even for an in-flight record.
-		// Cancellation can create an ambiguous outcome; the caller returns non-202
-		// and downstream consumers must deduplicate repeated logical event identities.
+		// The ingestion boundary is at-least-once, not exactly-once. An HTTP timeout
+		// can leave the broker outcome ambiguous; a producer retry may publish the same
+		// logical event again. Downstream consumers must deduplicate by CloudEvents event.id.
 		kgo.AllowIdempotentProduceCancellation(),
 		kgo.ProduceRequestTimeout(o.DeliveryTimeout),
 		kgo.DialTimeout(3 * time.Second),
@@ -75,11 +74,10 @@ func NewKafka(o Options) (*Kafka, error) {
 	return &Kafka{client: client, topic: o.Topic, timeout: o.DeliveryTimeout}, nil
 }
 
-func (p *Kafka) Publish(ctx context.Context, tenantID, sourceID, ingestionID string, receivedAt time.Time, eventID string, rawEvent []byte) error {
-	key, err := json.Marshal([3]string{tenantID, sourceID, eventID})
-	if err != nil {
-		return fmt.Errorf("encode Kafka record key: %w", err)
-	}
+func (p *Kafka) Publish(ctx context.Context, tenantID, sourceID, ingestionID string, receivedAt time.Time, sessionID string, rawEvent []byte) error {
+	// Partition by tenant/source/session for session-local ordering. event.id is
+	// deliberately excluded: events in the same session must share a Kafka key.
+	key := kafkaRecordKey(tenantID, sourceID, sessionID)
 	ctx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 	record := &kgo.Record{Topic: p.topic, Key: key, Value: rawEvent, Headers: []kgo.RecordHeader{
@@ -98,3 +96,13 @@ func (p *Kafka) Publish(ctx context.Context, tenantID, sourceID, ingestionID str
 func (p *Kafka) Ready(ctx context.Context) error { return p.client.Ping(ctx) }
 
 func (p *Kafka) Close() { p.client.Close() }
+
+// kafkaRecordKey keeps an event stream ordered by tenant/source and, when
+// present, by session. The event ID is not part of the key.
+func kafkaRecordKey(tenantID, sourceID, sessionID string) []byte {
+	key := tenantID + ":" + sourceID
+	if sessionID != "" {
+		key += ":" + sessionID
+	}
+	return []byte(key)
+}

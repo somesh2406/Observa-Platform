@@ -11,13 +11,14 @@ import (
 )
 
 type Config struct {
-	Service     string            `mapstructure:"service"`
-	Environment string            `mapstructure:"environment"`
-	HTTP        HTTPConfig        `mapstructure:"http"`
-	Development DevelopmentConfig `mapstructure:"development"`
-	Kafka       KafkaConfig       `mapstructure:"kafka"`
-	Vault       VaultConfig       `mapstructure:"vault"`
-	Logger      LoggerConfig      `mapstructure:"logger"`
+	Service         string                `mapstructure:"service"`
+	Environment     string                `mapstructure:"environment"`
+	HTTP            HTTPConfig            `mapstructure:"http"`
+	Development     DevelopmentConfig     `mapstructure:"development"`
+	Kafka           KafkaConfig           `mapstructure:"kafka"`
+	Vault           VaultConfig           `mapstructure:"vault"`
+	TenantRateLimit TenantRateLimitConfig `mapstructure:"tenant_rate_limit"`
+	Logger          LoggerConfig          `mapstructure:"logger"`
 }
 
 type HTTPConfig struct {
@@ -54,6 +55,17 @@ type VaultConfig struct {
 	TokenEnv       string        `mapstructure:"token_env"`
 	RequestTimeout time.Duration `mapstructure:"request_timeout"`
 	SkipTLSVerify  bool          `mapstructure:"skip_tls_verify"`
+}
+
+type TenantRateLimitConfig struct {
+	Requests         int           `mapstructure:"requests"`
+	Window           time.Duration `mapstructure:"window"`
+	RedisAddress     string        `mapstructure:"redis_address"`
+	RedisUsernameEnv string        `mapstructure:"redis_username_env"`
+	RedisPasswordEnv string        `mapstructure:"redis_password_env"`
+	RedisDB          int           `mapstructure:"redis_db"`
+	RedisTLS         bool          `mapstructure:"redis_tls"`
+	DialTimeout      time.Duration `mapstructure:"dial_timeout"`
 }
 
 type LoggerConfig struct {
@@ -112,6 +124,15 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("vault.token_env", "VAULT_TOKEN")
 	v.SetDefault("kafka.username_secret_key", "kafka_username")
 	v.SetDefault("kafka.password_secret_key", "kafka_password")
+	v.SetDefault("tenant_rate_limit.requests", 100)
+	v.SetDefault("tenant_rate_limit.window", "1m")
+	v.SetDefault("tenant_rate_limit.redis_address", "127.0.0.1:6379")
+	v.SetDefault("tenant_rate_limit.redis_username_env", "OBSERVA_TENANT_RATE_LIMIT_REDIS_USERNAME")
+	v.SetDefault("tenant_rate_limit.redis_password_env", "OBSERVA_TENANT_RATE_LIMIT_REDIS_PASSWORD")
+	v.SetDefault("tenant_rate_limit.redis_db", 0)
+	v.SetDefault("tenant_rate_limit.redis_tls", false)
+	v.SetDefault("tenant_rate_limit.dial_timeout", "2s")
+
 	v.SetDefault("logger.level", "info")
 	v.SetDefault("logger.format", "json")
 }
@@ -120,18 +141,17 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.Environment) == "" {
 		return errors.New("environment is required")
 	}
-	if c.Environment != "development" {
-		return errors.New("producer authentication is not implemented in this increment; ingestion can start only with environment=development")
-	}
-	if !c.Development.AllowUnauthenticated {
-		return errors.New("development.allow_unauthenticated must be explicitly enabled until producer authentication is implemented")
-	}
-	if strings.TrimSpace(c.Development.TenantID) == "" || strings.TrimSpace(c.Development.SourceID) == "" {
-		return errors.New("development tenant_id and source_id are required when unauthenticated development mode is enabled")
-	}
-	host, _, err := net.SplitHostPort(c.HTTP.Address)
-	if err != nil || (host != "localhost" && !net.ParseIP(host).IsLoopback()) {
-		return errors.New("unauthenticated development mode must bind to localhost or a loopback IP")
+	if c.Development.AllowUnauthenticated {
+		if c.Environment != "development" {
+			return errors.New("development.allow_unauthenticated may be enabled only when environment=development")
+		}
+		if strings.TrimSpace(c.Development.TenantID) == "" || strings.TrimSpace(c.Development.SourceID) == "" {
+			return errors.New("development tenant_id and source_id are required when unauthenticated development mode is enabled")
+		}
+		host, _, err := net.SplitHostPort(c.HTTP.Address)
+		if err != nil || !isExplicitLoopbackIP(host) {
+			return errors.New("unauthenticated development mode must bind explicitly to 127.0.0.1 or ::1")
+		}
 	}
 	if len(c.Kafka.Brokers) == 0 {
 		return errors.New("at least one Kafka broker is required")
@@ -148,6 +168,9 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.Kafka.Topic) == "" {
 		return errors.New("Kafka topic is required")
 	}
+	if c.Kafka.SASLMechanism == "PLAIN" && !c.Kafka.TLS {
+		return errors.New("Kafka SASL PLAIN requires kafka.tls=true")
+	}
 	if c.HTTP.MaxBodyBytes < 1 || c.HTTP.MaxBodyBytes > 16<<20 {
 		return errors.New("http.max_body_bytes must be between 1 byte and 16 MiB")
 	}
@@ -155,7 +178,8 @@ func (c Config) Validate() error {
 	if c.HTTP.ReadHeaderTimeout <= 0 || c.HTTP.ReadTimeout <= 0 ||
 		c.HTTP.WriteTimeout <= 0 || c.HTTP.IdleTimeout <= 0 ||
 		c.HTTP.ShutdownTimeout <= 0 || c.HTTP.PublishTimeout <= 0 ||
-		c.Kafka.DeliveryTimeout <= 0 || c.Vault.RequestTimeout <= 0 {
+		c.Kafka.DeliveryTimeout <= 0 || c.Vault.RequestTimeout <= 0 ||
+		c.TenantRateLimit.DialTimeout <= 0 {
 		return errors.New("all configured timeouts must be positive")
 	}
 
@@ -176,9 +200,25 @@ func (c Config) Validate() error {
 			return errors.New("Kafka username_secret_key and password_secret_key are required when Vault is enabled")
 		}
 	}
+
 	if c.Kafka.SASLMechanism != "" && !c.Vault.Enabled {
 		return errors.New("Kafka SASL is configured but Vault is disabled; credentials must be loaded from Vault")
 	}
+	if strings.TrimSpace(c.TenantRateLimit.RedisAddress) == "" {
+		return errors.New("tenant_rate_limit.redis_address is required")
+	}
+	if c.TenantRateLimit.RedisDB < 0 {
+		return errors.New("tenant_rate_limit.redis_db must not be negative")
+	}
+	if c.TenantRateLimit.Requests < 1 || c.TenantRateLimit.Window <= 0 {
+		return errors.New(
+			"tenant_rate_limit.requests and tenant_rate_limit.window must be positive",
+		)
+	}
+	if c.TenantRateLimit.Window.Milliseconds() < 1 {
+		return errors.New("tenant_rate_limit.window must be at least 1ms")
+	}
+
 	switch c.Kafka.SASLMechanism {
 	case "", "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 	default:
@@ -195,4 +235,11 @@ func (c Config) Validate() error {
 		return fmt.Errorf("logger.format must be json or text")
 	}
 	return nil
+}
+
+// isExplicitLoopbackIP is intentionally stricter than resolving the hostname
+// "localhost": the unauthenticated dev-mode guard only accepts literal loopback IPs.
+func isExplicitLoopbackIP(host string) bool {
+	ip := net.ParseIP(strings.TrimSpace(host))
+	return ip != nil && ip.IsLoopback() && (ip.Equal(net.ParseIP("127.0.0.1")) || ip.Equal(net.ParseIP("::1")))
 }

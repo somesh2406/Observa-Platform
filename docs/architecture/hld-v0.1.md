@@ -1,68 +1,32 @@
-# Observa High-Level Design — Initial Boundary
+# Observa ingestion — High-level design
 
-**Status:** Initial logical view with the first local-development ingestion boundary implemented; production runtime architecture remains incomplete.
+**Status:** Current ingestion/gateway implementation
 
-## Product views and shared event model
+## Goal
 
-The first product release has four primary investigation views:
+Accept one validated Observa CloudEvents 1.0 event, bind it to a trusted tenant/source identity, and publish the unchanged event body to Kafka. The HTTP acknowledgement indicates broker publication only.
 
-1. **User action timeline:** events attributed to a tenant-scoped user identity across connected sources.
-2. **Application journey:** events associated with a business application (for example, a loan application), potentially across users and sessions.
-3. **Session action trace:** events associated with a specific session, including technical events only when the source emits them.
-4. **Technical incidents:** technical signals and incidents derived by explicit detection/correlation rules, correlated to affected sessions, users, business applications, and traces when supported by event context.
-
-These views should be built from a common canonical event representation and shared correlation semantics. Incident detection/grouping is a derived capability over technical signals; it must not be conflated with event ingestion or assumed to be available before detection rules are designed. Do not build a separate ingestion pipeline or independently authoritative event history for each view. A single event may reference a user, business application, session, source, and request/trace, but these references are not always present. Unknown relationships remain unknown; the platform must not guess them.
-
-Terminology rule: a **business application** is the loan/application record being traced; a **source application** is the software emitting events. These must not be conflated in schemas or APIs.
-
-## Product flow
+## Current architecture
 
 ```text
-Instrumented application
-        |
-        v
-Authenticated ingestion boundary
-        |
-        v
-Durable event transport
-        |
-        v
-Processing / normalization
-        |                    \
-        v                     v
-Original evidence       Query-optimized data
-        \                     /
-         v                   v
-          Authorized Query API
-                   |
-                   v
-         Investigation clients
+Client -- HTTPS/JWT --> Envoy edge --> Ingestion service --> Kafka topic
+                         |                 |
+                         |                 +-- CloudEvents validation
+                         +-- TLS            +-- tenant quota (memory/Redis)
+                         +-- JWT            +-- at-least-once publish
+                         +-- global rate limit
 ```
 
-## First ingestion implementation increment
+Envoy Gateway API resources are the production edge configuration. The local stack runs plain Envoy without a Kubernetes Gateway API controller. Both configurations require a JWT on `POST /v1/events`, validate issuer/audience and JWKS, forward `tenant_id` and `source_id` claims as `X-Observa-Tenant` / `X-Observa-Source`, terminate TLS, and use the same default coarse edge rate limit. Health is routed separately from the JWT-protected event route.
 
-The initial Go ingestion service implements the synchronous HTTP boundary and publishes the unchanged, validated CloudEvents JSON to Kafka. It waits for a Kafka delivery result before returning `202 Accepted`; that acknowledgement means broker publication only, not evidence archival or downstream query visibility. Trusted tenant/source development identity and ingestion metadata are carried in Kafka headers and a stable composite record key, not injected into the producer contract.
+The ingestion service validates the request content type, body size, and event contract. In authenticated mode, it requires the gateway-forwarded tenant/source identity and applies its own per-tenant quota; it does not validate JWTs itself. The ingestion backend must be reachable only by the gateway. Local direct development mode is separately permitted only with `environment=development`, fixed tenant/source values, and a literal loopback bind.
 
-Authentication and authorization are intentionally not implemented in this increment. Unauthenticated mode is explicitly limited to `environment=development`, configured development tenant/source values, and a loopback HTTP bind. Production exposure remains blocked until a real producer authentication and tenant/source resolution adapter is implemented and tested. Kafka consumption and downstream storage remain the separate processing service's responsibility.
+Kafka receives the original CloudEvents JSON. Its key is `tenantID:sourceID` or `tenantID:sourceID:sessionID` if `data.context.session_id` is present. `event.id` is excluded from the partition key. The HTTP handler returns `202` only after producer delivery confirmation; the overall boundary is at-least-once, so consumers must deduplicate by `event.id`.
 
-## Boundary principles
+## Operational constraints
 
-- The ingestion path must define what durable acceptance means before returning success.
-- The event transport decouples producer availability from downstream processing but does not by itself guarantee end-to-end exactly-once writes.
-- Processing must support bounded batches, retry policy, poison-event handling, replay, and destination reconciliation.
-- Original evidence and normalized/query-optimized data have different access, retention, integrity, and lifecycle requirements; they may share infrastructure only if the guarantees remain clear.
-- The query boundary enforces authentication, tenant authorization, query limits, and data minimization.
-- Technical-event capture and incident detection are separate concerns: source instrumentation determines which signals exist, while explicit rules determine whether signals become grouped incidents.
-- Iceberg, ClickHouse, RustFS, and Kafka are candidates/currently known technologies, not unconditional commitments for every future component. Their roles and necessity must be validated against product workloads and operational cost.
+The Compose environment uses one local Kafka broker and local development TLS/Vault settings. These do not establish production durability. The tenant limiter's `memory` backend is process-local; production replicas that need a shared tenant quota must use a shared Redis backend. Redis/backend failures fail closed for the tenant quota.
 
-## Decisions intentionally deferred
+## Out of Scope (Deferred)
 
-- Exact service count and deployment topology.
-- Whether Iceberg and ClickHouse are both required.
-- Kafka partition count, replication factor, retention, and producer/consumer tuning.
-- Event ordering and deduplication semantics.
-- Multi-region topology.
-- Exact API and event schema versions.
-- Incident grouping, severity, deduplication, status lifecycle, and alerting semantics.
-
-These require product workload, failure, recovery, and security requirements first.
+OpenTelemetry instrumentation, Prometheus metrics, consumer processing, evidence storage, ClickHouse, and Iceberg are not implemented by this architecture increment. No downstream processing or evidence/query store is included in the request path.

@@ -2,11 +2,13 @@
 
 ## Preconditions
 
-- Start Kafka and ensure topic `observa.events.v1` exists.
+This collection targets the **direct loopback-only development mode** of ingestion. For the gateway-fronted local stack, use `https://127.0.0.1:8443`, a JWT from the configured test issuer, and `make test-integration` as documented in `deploy/local/README.md`.
+
+- Start Kafka and ensure topic `observa-events-v1` exists.
 - Start ingestion with `configs/ingestion.local.json`; the sample binds only to `127.0.0.1:8080` and uses fixed local development tenant/source identity.
 - Import `docs/testing/postman/Observa-Ingestion-Local.postman_collection.json` into Postman.
 - Set collection variable `baseUrl` to `http://127.0.0.1:8080`.
-- Before and after the run, keep a Kafka consumer/UI open on `observa.events.v1` so accepted and rejected requests can be correlated with actual records.
+- Before and after the run, keep a Kafka consumer/UI open on `observa-events-v1` so accepted and rejected requests can be correlated with actual records.
 
 ## Expected behavior
 
@@ -14,7 +16,7 @@
 |---|---|---|---|
 | P01 | Liveness | `200` | No record |
 | P02 | Readiness while Kafka is healthy | `200` | No record |
-| P03 | Valid user-action event | `202` | One record with original JSON value, configured tenant/source headers and event ID in the key tuple |
+| P03 | Valid user-action event without a session ID | `202` | One record with the original JSON value and Kafka key `tenantID:sourceID` |
 | P04 | Valid business-state event | `202` | One record |
 | P05 | Valid technical-signal event | `202` | One record |
 | P06 | Malformed JSON | `400 invalid_event` | No record |
@@ -25,7 +27,7 @@
 | P11 | `Content-Type: application/json` | `415 unsupported_media_type` | No record |
 | P12 | Empty/whitespace body with correct content type | `400 invalid_event` | No record |
 | P13 | Body larger than configured 1 MiB limit | `413 request_too_large` | No record |
-| P14 | Same event ID submitted twice | Both calls currently return `202` if Kafka is healthy | Expect two Kafka records today; same key tuple, distinct ingestion IDs. This verifies the current at-least-once behavior, not deduplication. |
+| P14 | Same event ID submitted twice | Both calls currently return `202` if Kafka is healthy | Expect two Kafka records today, with the same tenant/source/session key and distinct ingestion IDs. This verifies at-least-once behavior, not deduplication. |
 | P15 | Valid event while Kafka is unavailable | `503 publication_unconfirmed` after publish timeout | Outcome can be ambiguous if Kafka accepted the record but acknowledgement was lost; do not assume zero records solely from the HTTP response |
 | P16 | Readiness while Kafka is unavailable | `503` | No record |
 
@@ -41,7 +43,7 @@ Stop only the local Kafka broker/container, keep ingestion running, execute P15 
 
 ## Evidence to record
 
-For each request, record the Postman status/body and whether a corresponding Kafka record appeared. For accepted events, inspect the unchanged event JSON, key tuple `[tenant_id, source_id, event_id]`, and headers `observa_tenant_id`, `observa_source_id`, `observa_ingestion_id`, `observa_received_at`, and `observa_contract_version`. Rejected requests should not produce a record, except that a broker acknowledgement timeout has an explicitly ambiguous outcome.
+For each request, record the Postman status/body and whether a corresponding Kafka record appeared. For accepted events, inspect the unchanged event JSON and headers `observa_tenant_id`, `observa_source_id`, `observa_ingestion_id`, `observa_received_at`, and `observa_contract_version`. The Kafka key is `tenantID:sourceID` when `data.context.session_id` is absent and `tenantID:sourceID:sessionID` when it is present; `event.id` is never part of the key. Rejected requests should not produce a record, except that a broker acknowledgement timeout has an explicitly ambiguous outcome.
 
 ## Current boundary
 

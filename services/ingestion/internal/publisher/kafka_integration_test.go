@@ -33,7 +33,7 @@ func TestKafkaPublishIntegration(t *testing.T) {
 	}
 	eventID := "integration-test-" + time.Now().UTC().Format("20060102T150405.000000000")
 	body := []byte(`{"integration_test_id":"` + eventID + `"}`)
-	if err := pub.Publish(ctx, "tenant-integration-test", "source-integration-test", eventID, time.Now().UTC(), eventID, body); err != nil {
+	if err := pub.Publish(ctx, "tenant-integration-test", "source-integration-test", eventID, time.Now().UTC(), "", body); err != nil {
 		t.Fatalf("Kafka publish: %v", err)
 	}
 }

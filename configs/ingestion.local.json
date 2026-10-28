@@ -37,5 +37,15 @@
     "token_env": "VAULT_TOKEN",
     "request_timeout": "3s",
     "skip_tls_verify": false
+  },
+  "tenant_rate_limit": {
+    "requests": 100,
+    "window": "1m",
+    "redis_address": "127.0.0.1:6379",
+    "redis_username_env": "OBSERVA_TENANT_RATE_LIMIT_REDIS_USERNAME",
+    "redis_password_env": "OBSERVA_TENANT_RATE_LIMIT_REDIS_PASSWORD",
+    "redis_db": 0,
+    "redis_tls": false,
+    "dial_timeout": "2s"
   }
 }

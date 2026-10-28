@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: observa-edge
+spec:
+  gatewayClassName: observa-envoy
+  listeners:
+    - name: https
+      hostname: "${OBSERVA_GATEWAY_HOST}"
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: observa-gateway-tls
+      allowedRoutes:
+        namespaces:
+          from: Same

@@ -40,12 +40,11 @@ func TestAcceptsExplicitLoopbackDevelopmentMode(t *testing.T) {
 	}
 }
 
-func TestRejectsProductionUntilAuthenticationExists(t *testing.T) {
+func TestAllowsGatewayAuthenticatedProductionMode(t *testing.T) {
 	content := strings.Replace(validConfig, `"environment":"development"`, `"environment":"production"`, 1)
 	content = strings.Replace(content, `"allow_unauthenticated":true`, `"allow_unauthenticated":false`, 1)
-	_, err := Load(writeConfig(t, content))
-	if err == nil || !strings.Contains(err.Error(), "authentication is not implemented") {
-		t.Fatalf("expected production auth guard, got %v", err)
+	if _, err := Load(writeConfig(t, content)); err != nil {
+		t.Fatalf("gateway-authenticated production mode should load: %v", err)
 	}
 }
 
@@ -79,6 +78,7 @@ func TestEnvironmentOverridesConfigurationFile(t *testing.T) {
 func TestVaultPathMustBeRelativeToMount(t *testing.T) {
 	content := strings.Replace(validConfig, `"enabled":false`, `"enabled":true`, 1)
 	content = strings.Replace(content, `"sasl_mechanism":""`, `"sasl_mechanism":"PLAIN"`, 1)
+	content = strings.Replace(content, `"tls":false`, `"tls":true`, 1)
 	content = strings.Replace(content, `"kv_v2_path":"observa/ingestion"`, `"kv_v2_path":"secret/data/observa/ingestion"`, 1)
 	_, err := Load(writeConfig(t, content))
 	if err == nil || !strings.Contains(err.Error(), "relative to the KV v2 mount") {
@@ -107,5 +107,30 @@ func TestEnvironmentVariableCanSupplyKeyAbsentFromConfigFile(t *testing.T) {
 	}
 	if cfg.HTTP.Address != "127.0.0.1:8181" {
 		t.Fatalf("HTTP address=%q, want environment-only override", cfg.HTTP.Address)
+	}
+}
+
+func TestRejectsLocalhostNameForUnauthenticatedMode(t *testing.T) {
+	content := strings.Replace(validConfig, `"127.0.0.1:8080"`, `"localhost:8080"`, 1)
+	_, err := Load(writeConfig(t, content))
+	if err == nil || !strings.Contains(err.Error(), "127.0.0.1 or ::1") {
+		t.Fatalf("expected explicit loopback IP error, got %v", err)
+	}
+}
+
+func TestRejectsSASLPlainWithoutTLS(t *testing.T) {
+	content := strings.Replace(validConfig, `"sasl_mechanism":""`, `"sasl_mechanism":"PLAIN"`, 1)
+	content = strings.Replace(content, `"enabled":false`, `"enabled":true`, 1)
+	_, err := Load(writeConfig(t, content))
+	if err == nil || !strings.Contains(err.Error(), "PLAIN requires kafka.tls=true") {
+		t.Fatalf("expected PLAIN TLS validation error, got %v", err)
+	}
+}
+
+func TestRejectsUnknownTenantRateLimitBackend(t *testing.T) {
+	content := strings.TrimSuffix(validConfig, "}") + `,"tenant_rate_limit":{"backend":"unknown","requests":10,"window":"1m"}}`
+	_, err := Load(writeConfig(t, content))
+	if err == nil || !strings.Contains(err.Error(), "backend must be memory or redis") {
+		t.Fatalf("expected rate limiter backend validation error, got %v", err)
 	}
 }

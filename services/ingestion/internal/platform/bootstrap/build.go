@@ -13,6 +13,7 @@ import (
 	"github.com/observa-platform/observa/services/ingestion/internal/ingestion"
 	logger "github.com/observa-platform/observa/services/ingestion/internal/platform"
 	"github.com/observa-platform/observa/services/ingestion/internal/publisher"
+	"github.com/observa-platform/observa/services/ingestion/internal/ratelimit"
 	"github.com/observa-platform/observa/services/ingestion/internal/secrets"
 )
 
@@ -73,11 +74,36 @@ func Build(configPath string) (*Application, error) {
 	// 2. Custom Security Middleware
 	router.Use(securityHeaders)
 
-	// 3. Register Domain Handlers
+	// 3. Register Domain Handlers. In authenticated mode, request identity is
+	// derived from JWT claim headers set by Envoy; local dev mode uses configured identity.
 	ident := ingestion.Identity{TenantID: cfg.Development.TenantID, SourceID: cfg.Development.SourceID}
-	handler := ingestion.NewHandler(kafkaPub, ident, cfg.HTTP.MaxBodyBytes, cfg.HTTP.PublishTimeout, log)
 
-	// Assuming handler.Register now accepts chi.Router
+	password := ""
+	if cfg.TenantRateLimit.RedisPasswordEnv != "" {
+		password = os.Getenv(cfg.TenantRateLimit.RedisPasswordEnv)
+	}
+
+	username := ""
+	if cfg.TenantRateLimit.RedisUsernameEnv != "" {
+		username = os.Getenv(cfg.TenantRateLimit.RedisUsernameEnv)
+	}
+
+	tenantLimiter, err := ratelimit.NewRedisLimiter(ratelimit.RedisOptions{
+		Address:     cfg.TenantRateLimit.RedisAddress,
+		Username:    username,
+		Password:    password,
+		DB:          cfg.TenantRateLimit.RedisDB,
+		Requests:    cfg.TenantRateLimit.Requests,
+		Window:      cfg.TenantRateLimit.Window,
+		DialTimeout: cfg.TenantRateLimit.DialTimeout,
+		TLS:         cfg.TenantRateLimit.RedisTLS,
+	})
+	if err != nil {
+		kafkaPub.Close()
+		return nil, fmt.Errorf("tenant rate limiter init failed: %w", err)
+	}
+
+	handler := ingestion.NewHandler(kafkaPub, ident, cfg.Development.AllowUnauthenticated, tenantLimiter, cfg.HTTP.MaxBodyBytes, cfg.HTTP.PublishTimeout, log)
 	handler.Register(router)
 
 	server := &http.Server{
@@ -95,6 +121,9 @@ func Build(configPath string) (*Application, error) {
 		shutdownTimeout: cfg.HTTP.ShutdownTimeout,
 		cleanup: func() {
 			kafkaPub.Close()
+			if err := tenantLimiter.Close(); err != nil {
+				log.Error("close tenant rate limiter", "error", err)
+			}
 		},
 	}, nil
 }

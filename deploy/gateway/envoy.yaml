@@ -1,0 +1,129 @@
+# Plain-Envoy fallback, rendered by envsubst for local Compose. Keep issuer,
+# audience, claim mapping, TLS and edge rate-limit threshold aligned with the
+# Gateway API SecurityPolicy/BackendTrafficPolicy in this directory.
+static_resources:
+  listeners:
+    - name: observa_https
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 8443 }
+      filter_chains:
+        - transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificates:
+                  - certificate_chain: { filename: /etc/envoy/certs/tls.crt }
+                    private_key: { filename: /etc/envoy/certs/tls.key }
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: observa_ingestion
+                codec_type: AUTO
+                use_remote_address: true
+                normalize_path: true
+                merge_slashes: true
+                route_config:
+                  name: observa_routes
+                  virtual_hosts:
+                    - name: observa_ingestion
+                      domains: ["*"]
+                      routes:
+                        - match:
+                            {
+                              path: "/v1/events",
+                              headers: [{ name: ":method", exact_match: POST }],
+                            }
+                          route: { cluster: ingestion, timeout: 15s }
+                        - match: { prefix: "/health/" }
+                          route: { cluster: ingestion, timeout: 3s }
+                        - match: { prefix: "/" }
+                          direct_response: { status: 404 }
+                http_filters:
+                  - name: envoy.filters.http.jwt_authn
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+                      providers:
+                        observa:
+                          issuer: "${OBSERVA_JWT_ISSUER}"
+                          audiences: ["${OBSERVA_JWT_AUDIENCE}"]
+                          forward: false
+                          remote_jwks:
+                            http_uri:
+                              uri: "${OBSERVA_JWKS_URL}"
+                              cluster: jwks_cluster
+                              timeout: 3s
+                            cache_duration: 300s
+                          claim_to_headers:
+                            - header_name: x-observa-tenant
+                              claim_name: tenant_id
+                            - header_name: x-observa-source
+                              claim_name: source_id
+                      rules:
+                        - match: { path: "/v1/events" }
+                          requires: { provider_name: observa }
+                        - match: { prefix: "/" }
+                          requires: { allow_missing: {} }
+                  - name: envoy.filters.http.rate_limit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+                      domain: observa-ingestion
+                      failure_mode_deny: true
+                      rate_limit_service:
+                        grpc_service:
+                          envoy_grpc: { cluster_name: rate_limit_cluster }
+                          timeout: 0.25s
+                        transport_api_version: V3
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+    - name: ingestion
+      type: STRICT_DNS
+      connect_timeout: 2s
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: ingestion
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: ingestion, port_value: 8080 }
+    - name: rate_limit_cluster
+      type: STRICT_DNS
+      connect_timeout: 1s
+      http2_protocol_options: {}
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: rate_limit_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: ratelimit, port_value: 8081 }
+    - name: jwks_cluster
+      type: STRICT_DNS
+      connect_timeout: 2s
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: jwks_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: "${OBSERVA_JWKS_HOST}"
+                      port_value: ${OBSERVA_JWKS_PORT}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: "${OBSERVA_JWKS_HOST}"
+          common_tls_context:
+            validation_context:
+              trusted_ca: { filename: /etc/ssl/certs/ca-certificates.crt }
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 9901 }
