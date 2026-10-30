@@ -1,31 +1,38 @@
 # Ingestion Service — Implementation Acceptance Record
 
-**Status:** Source changes are present; automated runtime verification depends on the target Go toolchain and Docker environment.
+## Test coverage present in source
 
-## Automated test coverage in the source tree
+- Event contract unit tests: `libs/eventcontract/event_test.go`.
+- HTTP handler tests: `services/ingestion/internal/ingestion/handler_test.go`.
+- Configuration tests: `services/ingestion/internal/config/config_test.go`.
+- Redis limiter tests: `services/ingestion/internal/ratelimit/limiter_test.go`.
+- Vault adapter tests: `services/ingestion/internal/secrets/vault_test.go`.
+- Kafka publisher tests and opt-in broker integration test:
+  `services/ingestion/internal/publisher/publisher_test.go` and
+  `services/ingestion/internal/publisher/kafka_integration_test.go`.
+- Topic catalogue tests: `services/ingestion/internal/kafkatopics/catalogue_test.go`.
+- Compose smoke test: `scripts/test-integration.sh`.
 
-- Contract validator tests and the shared JSON Schema acceptance corpus.
-- HTTP handler tests for confirmed publication (`202`), invalid event rejection, publication failure (`503`), oversized body (`413`), missing content type (`415`), empty body rejection, readiness failure, and liveness independent of Kafka.
-- Authenticated-mode handler tests for missing trusted identity, gateway-forwarded tenant/source claims, session ID propagation, and tenant-limit enforcement after event validation.
-- Configuration tests for explicit loopback-only unauthenticated mode, gateway-authenticated production config, strict configuration decoding, environment overrides, invalid Vault paths, SASL/Vault consistency, explicit rejection of SASL `PLAIN` without TLS, and tenant limiter selection.
-- Memory limiter tests for per-tenant isolation, fixed-window reset, and blank tenant rejection.
-- Vault adapter tests using an HTTP test server.
-- Kafka publisher constructor tests and an opt-in Kafka integration test (`TestKafkaPublishIntegration`).
-- Compose smoke test checks liveness/readiness through Envoy and verifies JWT rejection when an event request has no token.
+The limiter tests are Redis integration tests and skip unless `OBSERVA_TEST_REDIS_ADDR` is set.
+There is no in-memory limiter implementation.
 
-## Commands to run on a configured development machine
+## Commands
 
 ```sh
-go test ./...
-go vet ./...
-python scripts/validate_event_schemas.py
+make test
+make vet
+make schema-check
 make local-up
 make test-integration
 make local-down
 ```
 
-Use Go 1.27.3 as declared by `go.work` and the ingestion module. Configure a real test JWT issuer/JWKS pair before testing successful event publishing. The integration smoke test does not claim to validate a valid JWT unless a separate authenticated request is made with a token minted by that issuer.
+The integration smoke test verifies liveness, readiness, and unauthenticated JWT rejection. It
+does not mint a valid token or prove successful authenticated publishing.
 
-## Verification limitations for this archive build
+## Toolchain and environment
 
-The current execution environment cannot download the required Go 1.27.3 toolchain from `proxy.golang.org`, and Docker is not available. Therefore, a full Go build/test, Docker image build, Compose health test, or real Kafka/JWT end-to-end test cannot be reported as passing from this environment. Formatting, static file/config checks, schema validation, manifest hashing, and ZIP preservation checks are reported separately in the final revision output.
+The workspace and ingestion module declare Go `1.27.3` (`go.work:1-3`,
+`services/ingestion/go.mod:1-3`). A successful execution of these commands depends on the local
+Go toolchain, Docker, and external infrastructure being available; this record does not claim
+that those commands were executed as part of this documentation revision.

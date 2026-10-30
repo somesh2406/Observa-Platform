@@ -56,3 +56,17 @@ of the backing stores is what makes the asymmetric postures correct.
   (they are ephemeral by design).
 - Cost: two small Redis instances instead of one large one — typically
   lower total cost because each is sized for its workload.
+
+## Implementation notes
+
+The local Compose stack does define separate `redis-edge` and `redis-tenant` instances
+(`deploy/local/docker-compose.yml:6-56`). `redis-edge` uses `allkeys-lru` and disables persistence;
+`redis-tenant` uses AOF and `noeviction` (`deploy/local/docker-compose.yml:9-18`, `34-44`).
+The tenant limiter fails closed: startup pings Redis and request-time errors are returned to the
+handler (`services/ingestion/internal/ratelimit/limiter.go:91-99`, `108-134`).
+
+The ADR's stated edge fail-open posture does not match the checked-in plain-Envoy config:
+`failure_mode_deny: true` makes the external rate-limit filter fail closed
+(`deploy/gateway/envoy.yaml:68-77`). The repository does not include production Redis deployment
+manifests, so the two-instance production topology is not established by this source tree.
+

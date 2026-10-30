@@ -27,3 +27,10 @@ Kafka remains the runtime boundary between ingestion and the future processing s
 - CI must eventually test each module both in the workspace and with workspace overrides disabled, with the shared module version/replacement policy made explicit.
 - Local module replacement is retained for in-repository builds; it is not a published dependency release strategy.
 - The original and prior implementation archives are retained under `migration-preservation/source-archives/` with SHA-256 checksums.
+
+## Implementation notes
+
+The workspace includes `./libs/eventcontract` and `./services/ingestion`
+(`go.work:1-8`). The ingestion module uses a local `replace` for the shared event-contract module
+(`services/ingestion/go.mod:53-56`).
+

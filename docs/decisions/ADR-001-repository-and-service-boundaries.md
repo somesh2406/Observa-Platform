@@ -25,3 +25,11 @@ See [ADR-005: Go workspace and module boundaries](ADR-005-go-workspace-and-modul
 - The workspace contains the shared event contract and ingestion service modules.
 - The prior implementation archive is retained byte-for-byte for traceability; active source is migrated into the new module layout.
 - The number of runtime services remains driven by actual operational requirements.
+
+## Implementation notes
+
+The current Go workspace includes `libs/eventcontract` and `services/ingestion` (`go.work:5-8`).
+The ingestion module contains separate `cmd/ingestion` and `cmd/kafka-topic-provisioner`
+entrypoints (`services/ingestion/cmd/ingestion/main.go:11-29`;
+`services/ingestion/cmd/kafka-topic-provisioner/main.go:18-23`).
+

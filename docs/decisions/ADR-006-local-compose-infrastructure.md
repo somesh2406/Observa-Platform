@@ -27,3 +27,11 @@ Kafka publishes a host listener at `localhost:9092` for the Go process running o
 
 
 > Maintenance note: This ADR records the original local Compose choice for traceability. Routine local setup, image pulls, and machine-specific changes belong in the relevant runbook; do not create a new ADR for each local infrastructure operation.
+
+## Implementation notes
+
+The integrated local stack is defined in `deploy/local/docker-compose.yml:4-237` and includes
+separate edge/tenant Redis instances, rate-limit configuration/service, Kafka, Vault, ingestion,
+Envoy, and a topic provisioner. The root Makefile starts and stops this stack with the `local-up`
+and `local-down` targets (`Makefile:41-46`).
+

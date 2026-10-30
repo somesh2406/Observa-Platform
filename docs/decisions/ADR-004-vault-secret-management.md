@@ -24,3 +24,12 @@ Ingestion needs ordinary runtime settings and may need Kafka SASL credentials. C
 - Vault dev mode is in-memory and loses secrets on restart.
 - The local root token and placeholder values must never be reused outside local development.
 - Production Vault authentication, policy scope, audit configuration, TLS trust, secret rotation, and high availability must be configured for the deployment environment.
+
+## Implementation notes
+
+When `vault.enabled` is true, bootstrap reads the token from the configured environment variable
+and fetches the Kafka username/password from the KV v2 path before constructing the producer
+(`services/ingestion/internal/platform/bootstrap/build.go:28-51`). The Vault client reads the
+`secret` KV v2 mount and validates that both credentials are present
+(`services/ingestion/internal/secrets/vault.go:50-69`).
+

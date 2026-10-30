@@ -41,3 +41,10 @@ An initial adapter now uses franz-go with `acks=all`, idempotent production, bou
 - franz-go project: https://github.com/twmb/franz-go
 - Confluent Go client and CGO requirements: https://github.com/confluentinc/confluent-kafka-go
 - kafka-go project: https://github.com/segmentio/kafka-go
+
+## Implementation notes
+
+The publisher uses franz-go (`services/ingestion/internal/publisher/publisher.go:9-12`),
+configures all-ISR acknowledgements, ten record retries, delivery timeout, produce-request
+timeout, and a three-second dial timeout (`services/ingestion/internal/publisher/publisher.go:36-50`).
+

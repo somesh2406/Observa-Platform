@@ -28,3 +28,13 @@ The edge owns TLS, JWT validation and coarse global rate limiting. Ingestion own
 ## Out of Scope (Deferred)
 
 OpenTelemetry instrumentation, Prometheus metrics, consumer processing, evidence storage, ClickHouse, and Iceberg remain out of scope and are not implemented by this decision. No downstream consumer or deduplication store is added.
+
+## Implementation notes
+
+The local Envoy configuration validates JWTs for `/v1/events`, maps `tenant_id` and `source_id`
+to trusted headers, and invokes the external edge rate-limit service
+(`deploy/gateway/envoy.yaml:43-77`). The ingestion handler consumes those headers when
+unauthenticated development mode is disabled (`services/ingestion/internal/ingestion/handler.go:103-116`).
+The current bootstrap always constructs a Redis tenant limiter; there is no in-memory mode
+(`services/ingestion/internal/platform/bootstrap/build.go:81-106`).
+
