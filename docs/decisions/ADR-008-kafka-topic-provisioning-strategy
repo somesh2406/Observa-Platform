@@ -1,0 +1,287 @@
+# ADR-001: Kafka Topic Provisioning Strategy
+
+**Status:** Accepted  
+**Decision date:** 2026-10-29  
+**System:** Observa  
+**Decision owners:** Observa Engineering  
+**Scope:** Kafka topic lifecycle management
+
+## 1. Context
+
+Observa uses Apache Kafka as the event transport layer between the ingestion service and downstream processing components. Topics must exist with the correct partition count, replication factor, and configuration before producers and consumers use them.
+
+Managing topics manually creates several operational risks:
+
+- Topics may be missing or configured inconsistently across environments.
+- Topic names and configuration can drift between application configuration and infrastructure.
+- Ingestion deployments may fail when required topics do not exist.
+- Developers and operators may create topics with incorrect retention, replication, or partition settings.
+- Topic creation logic embedded in application services couples infrastructure administration to application runtime behavior.
+
+Observa therefore needs a repeatable, environment-aware, and auditable approach to topic provisioning.
+
+## 2. Decision
+
+Observa will use a **declarative Kafka topic catalogue and a one-shot topic provisioning command** that interacts with Kafka through the Kafka Admin API.
+
+The provisioner will:
+
+1. Read the topic catalogue.
+2. Select the configuration for the target environment.
+3. Connect to the configured Kafka brokers.
+4. Inspect the required topics.
+5. Create topics that do not exist.
+6. Validate existing topics against the expected configuration.
+7. Report provisioning errors and exit with a non-zero status when provisioning fails.
+
+The provisioner will run as a short-lived deployment or infrastructure job. It will not run as a permanent service.
+
+The ingestion service will not be responsible for creating or modifying Kafka topics.
+
+## 3. Architecture
+
+The provisioning workflow is:
+
+```text
+Topic Catalogue
+      |
+      v
+Topic Provisioner
+      |
+      v
+Kafka Admin API
+      |
+      v
+Kafka Cluster
+      |
+      v
+Topic Readiness Validation
+      |
+      v
+Ingestion Deployment
+```
+
+The provisioning job must complete successfully before the ingestion service starts in environments where the ingestion service depends on the provisioned topics.
+
+## 4. Topic Catalogue
+
+The topic catalogue is the source of truth for the topics managed by the provisioner.
+
+The current local topic catalogue is maintained at:
+
+`deploy/local/kafka/topics.yaml`
+
+The catalogue defines the required topics and their environment-specific configuration.
+
+The initial topics are:
+
+| Topic                   | Purpose                                                             |
+| ----------------------- | ------------------------------------------------------------------- |
+| `observa.events.v1`     | Primary event ingestion stream                                      |
+| `observa.events.dlq.v1` | Dead-letter stream for events that cannot be processed successfully |
+
+Topic names are versioned where appropriate to support future event contract or stream evolution.
+
+The catalogue should define, at minimum, the following properties for each topic:
+
+- Topic name
+- Partition count
+- Replication factor
+- Retention policy
+- Any additional explicitly managed topic configurations
+
+The actual partition counts, replication factors, and retention values must be defined in the catalogue according to the requirements of each environment. They should not be inferred from this ADR.
+
+## 5. Provisioner Execution
+
+### Local development
+
+The provisioner runs as a one-shot Docker Compose service.
+
+Its configuration includes:
+
+- Kafka bootstrap address: `kafka:29092`
+- Environment: `local`
+- Catalogue path: `/app/topics.yaml`
+
+The catalogue is mounted read-only into the container. The ingestion service depends on the provisioner's successful completion.
+
+The provisioning service is not restarted as a permanent background process.
+
+### Production
+
+The same provisioning implementation and topic catalogue format should be used in production, with environment-appropriate configuration.
+
+The provisioner should execute as a dedicated deployment or infrastructure job before dependent application workloads are rolled out.
+
+Production-specific requirements include:
+
+- Production Kafka bootstrap addresses and authentication settings.
+- Environment-specific topic configuration.
+- Restricted permissions for topic administration.
+- Deployment logs and observable job outcomes.
+- Explicit validation before dependent services are released.
+
+The exact production job mechanism is deployment-specific and must be documented in the relevant deployment configuration.
+
+## 6. Idempotency and Reconciliation
+
+Provisioning must be safe to execute repeatedly.
+
+The expected behavior is:
+
+| Condition                                    | Expected behavior                                                                   |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Required topic does not exist                | Create the topic                                                                    |
+| Topic exists and matches the catalogue       | Leave it unchanged                                                                  |
+| Topic exists with incompatible configuration | Report the mismatch and fail, unless a specific safe reconciliation rule is defined |
+| Kafka is unavailable                         | Fail with a meaningful error and non-zero exit status                               |
+| Catalogue is missing or invalid              | Fail before attempting provisioning                                                 |
+| Required topic cannot be created             | Fail the provisioning job                                                           |
+
+Topic creation must not result in duplicate topics or destructive changes on repeated executions.
+
+Changes to existing topics must be handled deliberately. In particular, reducing partition counts is not supported, and changes to retention or replication settings must follow Kafka's supported operations and the organization's operational policy.
+
+## 7. Separation of Responsibilities
+
+**Topic provisioner**
+
+Responsible for:
+
+- Reading and validating the topic catalogue.
+- Creating required topics.
+- Checking topic existence and relevant configuration.
+- Reporting provisioning results.
+- Returning an appropriate process exit status.
+
+**Ingestion service**
+
+Responsible for:
+
+- Accepting and validating incoming events.
+- Publishing events to the configured Kafka topic.
+- Handling producer errors and delivery failures.
+- Exposing readiness based on its actual runtime dependencies.
+
+The ingestion service must not silently create topics as a fallback for missing infrastructure.
+
+**Deployment system**
+
+Responsible for:
+
+- Supplying the correct environment configuration.
+- Running provisioning before dependent workloads.
+- Preventing deployment progression when provisioning fails.
+- Retaining job logs and execution status.
+
+## 8. Configuration and Environment Management
+
+The provisioner must use the broker address appropriate to its execution environment.
+
+For example:
+
+- Containers in the local Compose network use `kafka:29092`.
+- Processes running on the host use `localhost:9092`, when the local broker listener is configured accordingly.
+
+These addresses are not interchangeable. Kafka's advertised listeners must be reachable from the client's network.
+
+The topic catalogue and ingestion configuration must use identical topic names. For the primary event stream, the canonical name is:
+
+`observa.events.v1`
+
+Environment-specific settings must be provided explicitly. A configuration mismatch must not be hidden by silently falling back to an unintended environment or topic.
+
+Secrets must be supplied through the approved secret-management mechanism and must not be stored in the topic catalogue.
+
+## 9. Security
+
+The provisioner requires Kafka permissions sufficient to inspect topic metadata and create or validate the managed topics.
+
+Its privileges should be restricted to the required administrative operations and topic scope wherever the Kafka security model supports such restrictions.
+
+The ingestion service should use producer permissions rather than inheriting topic-administration privileges.
+
+Credentials must not be written to logs, committed to source control, or embedded in the topic catalogue.
+
+## 10. Observability and Failure Handling
+
+The provisioning job must provide enough diagnostic information to determine:
+
+- Which environment is being provisioned.
+- Which Kafka cluster it is connecting to, without exposing credentials.
+- Which topics were created.
+- Which topics already existed and passed validation.
+- Which topic configurations did not match expectations.
+- Why provisioning failed.
+
+A failed provisioning job must be visible to the deployment system and must block dependent application deployment.
+
+The provisioner should fail clearly when Kafka is unreachable, authorization is denied, the catalogue is invalid, or topic creation fails. It must not report success merely because a topic creation request was submitted; it should validate the resulting state.
+
+## 11. Alternatives Considered
+
+### A. Manual topic creation
+
+**Rejected.** Manual administration is difficult to reproduce and prone to configuration drift.
+
+### B. Create topics inside the ingestion service
+
+**Rejected.** This couples application startup to administrative operations and grants the ingestion service broader privileges than it needs.
+
+### C. Run a permanent topic-provisioning service
+
+**Rejected.** Topic provisioning is a deployment and infrastructure lifecycle task, not a continuously running application responsibility. A permanent service adds operational overhead without providing a necessary benefit for the current requirements.
+
+### D. Declarative catalogue with a one-shot provisioner
+
+**Selected.** This approach supports repeatable execution, configuration review, separation of responsibilities, and consistent provisioning across environments.
+
+## 12. Consequences
+
+### Positive consequences
+
+- Topic provisioning is repeatable and automated.
+- Local and production environments can share the same provisioning implementation.
+- Topic configuration is centrally declared and reviewable.
+- Application deployment can be gated on successful provisioning.
+- The ingestion service does not need topic-administration privileges.
+- Topic configuration drift can be detected before dependent workloads start.
+
+### Trade-offs
+
+- The deployment workflow must manage an additional job.
+- The catalogue and application configuration must remain consistent.
+- Existing topic changes require explicit reconciliation rules.
+- Production reliability depends on correct Kafka connectivity, permissions, and deployment ordering.
+
+## 13. Validation and Acceptance Criteria
+
+This decision is considered correctly implemented when:
+
+- [x] The provisioner runs successfully in the local environment.
+- [x] The required event and dead-letter topics can be provisioned.
+- [ ] Running the provisioner again leaves valid existing topics unchanged.
+- [ ] Existing incompatible topic configurations are detected and reported.
+- [ ] Kafka connection failures and authorization failures produce a non-zero exit status.
+- [ ] Missing or invalid catalogue configuration causes provisioning to fail.
+- [ ] The ingestion service starts only after provisioning succeeds.
+- [ ] Production deployment runs the same provisioning implementation using production configuration.
+- [ ] Provisioning outcomes are available in deployment logs.
+
+## 14. Future Considerations
+
+The following concerns should be addressed when operational requirements justify them:
+
+- Automated detection and controlled reconciliation of catalogue drift.
+- Partition-count and retention changes through reviewed infrastructure changes.
+- Production replication-factor validation and availability requirements.
+- Monitoring and alerting for provisioning failures.
+- Compatibility checks between event schemas, topic versions, and downstream consumers.
+- A documented procedure for topic migration, deprecation, and retirement.
+
+## 15. Final Decision
+
+Observa adopts a **declarative Kafka topic catalogue with a one-shot Admin API provisioner**. Topic provisioning is performed as an infrastructure or deployment operation, while application services remain responsible for event processing rather than infrastructure creation.
+
+This decision establishes the foundation for consistent, secure, and repeatable Kafka topic management across Observa environments.

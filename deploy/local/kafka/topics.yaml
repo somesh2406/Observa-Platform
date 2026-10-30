@@ -1,0 +1,36 @@
+apiVersion: observa.io/v1
+kind: KafkaTopicCatalogue
+
+defaults:
+  cleanupPolicy: delete
+  compressionType: producer
+  maxMessageBytes: 1048576
+
+environments:
+  local:
+    replicationFactor: 1
+    minInsyncReplicas: 1
+    topics:
+      - name: observa.events.v1
+        partitions: 1
+        retentionMs: 259200000
+        retentionBytes: 53687091200
+
+      - name: observa.events.dlq.v1
+        partitions: 1
+        retentionMs: 259200000
+        retentionBytes: 10737418240
+
+  production:
+    replicationFactor: 3
+    minInsyncReplicas: 2
+    topics:
+      - name: observa.events.v1
+        partitions: 12
+        retentionMs: 604800000
+        retentionBytes: 107374182400
+
+      - name: observa.events.dlq.v1
+        partitions: 3
+        retentionMs: 1209600000
+        retentionBytes: 21474836480

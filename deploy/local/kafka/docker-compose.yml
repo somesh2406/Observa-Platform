@@ -55,13 +55,12 @@ services:
       KAFKA_CLUSTERS_0_NAME: "observa-local"
       # Container-to-container traffic uses the internal Docker DNS name.
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
-    networks:
-      - observa-net
+    networks: [observa-net]
 
 volumes:
   observa_kafka_data:
 
 networks:
   observa-net:
-    name: observa-net
+    name: observa-local-net
     external: true

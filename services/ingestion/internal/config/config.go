@@ -126,7 +126,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("kafka.password_secret_key", "kafka_password")
 	v.SetDefault("tenant_rate_limit.requests", 100)
 	v.SetDefault("tenant_rate_limit.window", "1m")
-	v.SetDefault("tenant_rate_limit.redis_address", "127.0.0.1:6379")
+	v.SetDefault("tenant_rate_limit.redis_address", "127.0.0.1:6380")
 	v.SetDefault("tenant_rate_limit.redis_username_env", "OBSERVA_TENANT_RATE_LIMIT_REDIS_USERNAME")
 	v.SetDefault("tenant_rate_limit.redis_password_env", "OBSERVA_TENANT_RATE_LIMIT_REDIS_PASSWORD")
 	v.SetDefault("tenant_rate_limit.redis_db", 0)
